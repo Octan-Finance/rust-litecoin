@@ -397,9 +397,9 @@ impl fmt::Display for Address {
                 program: ref prog,
             } => {
                 let hrp = match self.network {
-                    Network::Bitcoin => "bc",
-                    Network::Testnet | Network::Signet => "tb",
-                    Network::Regtest => "bcrt",
+                    Network::Bitcoin => "ltc",
+                    Network::Testnet | Network::Signet => "tltc",
+                    Network::Regtest => "rltc",
                 };
                 let bech_ver = if ver.to_u8() > 0 {  bech32::Variant::Bech32m } else { bech32::Variant::Bech32 };
                 let mut upper_writer;
@@ -445,9 +445,9 @@ impl FromStr for Address {
         // try bech32
         let bech32_network = match find_bech32_prefix(s) {
             // note that upper or lowercase is allowed but NOT mixed case
-            "bc" | "BC" => Some(Network::Bitcoin),
-            "tb" | "TB" => Some(Network::Testnet), // this may also be signet
-            "bcrt" | "BCRT" => Some(Network::Regtest),
+            "ltc" | "LTC" => Some(Network::Bitcoin),
+            "tltc" | "TLTC" => Some(Network::Testnet), // this may also be signet
+            "rltc" | "RLTC" => Some(Network::Regtest),
             _ => None,
         };
         if let Some(network) = bech32_network {
@@ -627,7 +627,7 @@ mod tests {
         // stolen from Bitcoin transaction: b3c8c2b6cfc335abbcb2c7823a8453f55d64b2b5125a9a61e8737230cdb8ce20
         let mut key = hex_key!("033bc8c83c52df5712229a2f72206d90192366c36428cb0c12b6af98324d97bfbc");
         let addr = Address::p2wpkh(&key, Bitcoin).unwrap();
-        assert_eq!(&addr.to_string(), "bc1qvzvkjn4q3nszqxrv3nraga2r822xjty3ykvkuw");
+        assert_eq!(&addr.to_string(), "ltc1qvzvkjn4q3nszqxrv3nraga2r822xjty3q2kjy7");
         assert_eq!(addr.address_type(), Some(AddressType::P2wpkh));
         roundtrips(&addr);
 
@@ -643,7 +643,7 @@ mod tests {
         let addr = Address::p2wsh(&script, Bitcoin);
         assert_eq!(
             &addr.to_string(),
-            "bc1qwqdg6squsna38e46795at95yu9atm8azzmyvckulcc7kytlcckxswvvzej"
+            "ltc1qwqdg6squsna38e46795at95yu9atm8azzmyvckulcc7kytlcckxsdgzjrh"
         );
         assert_eq!(addr.address_type(), Some(AddressType::P2wsh));
         roundtrips(&addr);
@@ -694,14 +694,10 @@ mod tests {
     fn test_bip173_350_vectors() {
         // Test vectors valid under both BIP-173 and BIP-350
         let valid_vectors = [
-            ("BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4", "0014751e76e8199196d454941c45d1b3a323f1433bd6"),
-            ("tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7", "00201863143c14c5166804bd19203356da136c985678cd4d27a1b8c6329604903262"),
-            ("bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y", "5128751e76e8199196d454941c45d1b3a323f1433bd6751e76e8199196d454941c45d1b3a323f1433bd6"),
-            ("BC1SW50QGDZ25J", "6002751e"),
-            ("bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs", "5210751e76e8199196d454941c45d1b3a323"),
-            ("tb1qqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesrxh6hy", "0020000000c4a5cad46221b2a187905e5266362b99d5e91c6ce24d165dab93e86433"),
-            ("tb1pqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesf3hn0c", "5120000000c4a5cad46221b2a187905e5266362b99d5e91c6ce24d165dab93e86433"),
-            ("bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0", "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+            ("ltc1qeavxsja9n5ln0c0ekgctvurs84wdxhqwhlqu66", "0014cf58684ba59d3f37e1f9b230b670703d5cd35c0e"),
+            ("ltc1qft7a9sxpv3tkr8p7xskdfhwtauz87lkluy30m90tat94sc9suqzqr7f3aw", "00204afdd2c0c16457619c3e342cd4ddcbef047f7edfe122fd95ebeacb5860b0e004"),
+            ("ltc1ql8ex6du05a4g0q894g6j7arjxacu7tdc3fgluc", "0014f9f26d378fa76a8780e5aa352f74723771cf2db8"),
+            ("ltc1qkx8fn57ewzw4xc4py9qr8ypx0f9f0knur89590lfndvdf4n2fcwqyaw8qv", "0020b18e99d3d9709d5362a121403390267a4a97da7c19cb42bfe99b58d4d66a4e1c")
         ];
         for vector in &valid_vectors {
             let addr: Address = vector.0.parse().unwrap();
@@ -833,12 +829,12 @@ mod tests {
 
     #[test]
     fn test_qr_string() {
-        for el in  ["132F25rTsvBdp9JzLLBHP5mvGY66i1xdiM", "33iFwdLuRpW1uK1RTRqsoi8rR4NpDzk66k"].iter() {
+        for el in  ["33iFwdLuRpW1uK1RTRqsoi8rR4NpDzk66k"].iter() {
             let addr = Address::from_str(el).unwrap();
             assert_eq!(addr.to_qr_uri(), format!("bitcoin:{}", el));
         }
 
-        for el in ["bcrt1q2nfxmhd4n3c8834pj72xagvyr9gl57n5r94fsl", "bc1qwqdg6squsna38e46795at95yu9atm8azzmyvckulcc7kytlcckxswvvzej"].iter() {
+        for el in ["ltc1q3u5dhq8vj3svu3sccs54ualt5wfwcx24rkpg7n"].iter() {
             let addr = Address::from_str(el).unwrap();
             assert_eq!(addr.to_qr_uri(), format!("BITCOIN:{}", el.to_ascii_uppercase()) );
         }
